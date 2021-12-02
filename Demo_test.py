@@ -1,11 +1,12 @@
 # Importing Libraries
-
+import psycopg2 as pg
+from psycopg2.extras import RealDictCursor
 from typing import Optional
 from fastapi import FastAPI, Response, status, HTTPException
 from fastapi.params import Body
 from pydantic import BaseModel
 from random import randrange
-
+import time
 from starlette.status import HTTP_204_NO_CONTENT
 
 # Getting app of fastapi
@@ -16,7 +17,17 @@ class Post(BaseModel):
     title: str
     content: str
     published: bool = True
-    rating: Optional[int]
+
+while True:
+    try:
+        conn = pg.connect(host='localhost', database='fastapi_API_Dev', user='postgres', password='Burhan123', cursor_factory=RealDictCursor)
+        cursor = conn.cursor()
+        print("Database connection was successfull!!")
+        break
+    except Exception as error:
+        print("Connecting to database failed!!")
+        print("ERROR: ", error)
+        time.sleep(2)
 
 # Creating database like format
 my_posts = [{"title": "This is my 1st post", "content":"This is my 1st content", "id":1}, {"title": "My favourite recipe", "content": "Below are three recipes", "id":2}]
@@ -78,7 +89,7 @@ def get_post(id : int, response: Response):
 def delete_post(id:int):
     index = find_index_post(id)
     if index == None:
-        return HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"post with id: {id} not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"post with id: {id} not found")
     my_posts.pop(index)
     return Response(status_code=HTTP_204_NO_CONTENT)
 
@@ -87,12 +98,11 @@ def delete_post(id:int):
 # UPDATE request to update a already existing post
 @app.put("updateposts/posts/{id}")
 def update_post(id:int, post:Post):
-    index = find_index_post(id)
-    if index == None:
-        return HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"post with id: {id} not found")
-
-    post_dict = post.dict()
-    post_dict['id'] = id
-    my_posts[index] = post_dict
-    print(post_dict)
-    return {"data" : post_dict}
+    
+    cursor.execute(""" UPDATE posts SET title = %s, content = %s, published = %s WHERE id = %s RETURNING * """, (post.title, post.content, post.published, str(id)))
+    update_posts = cursor.fetchone()
+    
+    if update_posts == None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"post with id: {id} not found")
+    conn.commit()
+    return {"data" : update_posts}

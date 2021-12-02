@@ -1,3 +1,0 @@
-INSERT INTO product (name, price, inventory) VALUES ('microphone', 300, 1500)
-DELETE FROM product WHERE id=12;
-UPDATE product SET name='something', price=30 WHERE id=3;
