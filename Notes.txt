@@ -1,8 +1,6 @@
-INSERT INTO product (name, price, inventory) VALUES ('microphone', 300, 1500)
-DELETE FROM product WHERE id=12;
-UPDATE product SET name='something', price=30 WHERE id=3;
+Pydantic Models only knows how to deal with the dictionary and SQL.
 
-Schema/Pydantic Models is to ensure that it is requesting what is provided by the user and in return rsponse is given.
+Schema/Pydantic Models is to ensure that it is requesting what is provided by the user and in return response is given.
 
 SQLalchemy models is for handling and forming a database table like CRUD application table in database.
 
