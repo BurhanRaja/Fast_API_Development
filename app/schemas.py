@@ -2,6 +2,7 @@ from pydantic import BaseModel
 from pydantic.networks import EmailStr
 from sqlalchemy import orm
 from datetime import datetime
+from typing import Optional
 
 # Schema API = Structured data
 
@@ -36,3 +37,17 @@ class UserResponse(BaseModel):
 
     class Config:
         orm_mode=True 
+
+# User Login
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
+
+# User token
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+# token data
+class TokenData(BaseModel):
+    id: Optional[str] = None
