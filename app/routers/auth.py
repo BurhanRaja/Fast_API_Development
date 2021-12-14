@@ -20,5 +20,5 @@ def login(user_credentials: OAuth2PasswordRequestForm = Depends(), db: Session =
     if not verify(user_credentials.password, log_user.password):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=f'Invalid Credentials.')
     
-    access_token = create_encode_token(data = {"user_id":log_user.user_id})
+    access_token = create_encode_token(data = {"user_id":log_user.id})
     return {"access_token":access_token, "token_type":"bearer"} 

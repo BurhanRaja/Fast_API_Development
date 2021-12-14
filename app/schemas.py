@@ -6,24 +6,6 @@ from typing import Optional
 
 # Schema API = Structured data
 
-# Posts
-class PostBase(BaseModel):
-    title: str
-    content: str
-    published: bool = True
-
-class PostCreate(PostBase):
-    pass
-
-# Posts Response
-class PostResponse(PostBase):
-    id: int
-    created_at: datetime
-
-    class Config:
-        orm_mode=True
-
-
 # Users
 class UserCreate(BaseModel):
     email: EmailStr
@@ -31,7 +13,7 @@ class UserCreate(BaseModel):
 
 # Users Response
 class UserResponse(BaseModel):
-    user_id: int
+    id: int
     email: EmailStr
     created_at: datetime
 
@@ -51,3 +33,25 @@ class Token(BaseModel):
 # token data
 class TokenData(BaseModel):
     id: Optional[str] = None
+
+    
+
+
+# Posts
+class PostBase(BaseModel):
+    title: str
+    content: str
+    published: bool = True
+
+class PostCreate(PostBase):
+    pass
+
+# Posts Response
+class PostResponse(PostBase):
+    id: int
+    created_at: datetime
+    user_id: int
+    user: UserResponse
+
+    class Config:
+        orm_mode=True

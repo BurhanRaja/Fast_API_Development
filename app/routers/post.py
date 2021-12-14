@@ -1,9 +1,8 @@
-from typing import List
+from typing import List, Optional
 from fastapi import Response, status, HTTPException, Depends, APIRouter
 from starlette.status import HTTP_204_NO_CONTENT
 from sqlalchemy.orm import Session
 from app import oauth2
-from app.oauth2 import get_current_user
 from .. import models, schemas
 from ..database import get_db
 
@@ -14,17 +13,17 @@ router = APIRouter(
 
 # GET Request to recieve all posts of a user
 @router.get("/", response_model= List[schemas.PostResponse])
-def posts(db: Session = Depends(get_db), current_user: int = Depends(oauth2.get_current_user)):
+def posts(db: Session = Depends(get_db), current_user: int = Depends(oauth2.get_current_user), limit: int = 10, skip: int = 0, search: Optional[str] = ""):
     # from database
-    posts = db.query(models.Post).all()
+    posts = db.query(models.Post).filter(models.Post.title.contains(search)).limit(limit).offset(skip).all()
     return posts
 
 
 # POST Request (Create)
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.PostResponse)
 def create_post(post : schemas.PostCreate, db: Session = Depends(get_db), current_user: int = Depends(oauth2.get_current_user)):
-    print(current_user)
-    new_post = models.Post(**post.dict())
+    
+    new_post = models.Post(user_id=current_user.id, **post.dict())
     db.add(new_post)
     db.commit()
     db.refresh(new_post)
@@ -43,10 +42,16 @@ def get_post(id : int, db: Session = Depends(get_db), current_user: int = Depend
 # DELETE request to delete one post of a particular user
 @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_post(id:int, db: Session = Depends(get_db), current_user: int = Depends(oauth2.get_current_user)):
-    del_post = db.query(models.Post).filter(models.Post.id == id)
-    if del_post.first() == None:
+    post_query = db.query(models.Post).filter(models.Post.id == id)
+    del_post = post_query.first()
+    # If the post id is not valid
+    if del_post == None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"post with id: {id} does not exist.")
-    del_post.delete(synchronize_session=False)
+    # If the user is not valid
+    if del_post.user_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f"Not Authorized to perform requested task.")
+    
+    post_query.delete(synchronize_session=False)
     db.commit()
     return Response(status_code=HTTP_204_NO_CONTENT)
 
@@ -57,8 +62,13 @@ def update_post(id:int, post:schemas.PostCreate, db: Session = Depends(get_db), 
     
     post_query = db.query(models.Post).filter(models.Post.id == id)
     update_post = post_query.first()
+    # If the post id is not valid
     if update_post == None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"post with id: {id} does not exist.")
+    # If the user is not valid
+    if update_post.user_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f"Not Authorized to perform requested task.")
+
     post_query.update(post.dict(), synchronize_session=False)
     db.commit()
     return post_query.first()
