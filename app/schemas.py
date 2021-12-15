@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from pydantic.networks import EmailStr
+from pydantic.types import conint
 from sqlalchemy import orm
 from datetime import datetime
 from typing import Optional
@@ -47,6 +48,7 @@ class PostCreate(PostBase):
     pass
 
 # Posts Response
+# Getting the information of user with all post respectively
 class PostResponse(PostBase):
     id: int
     created_at: datetime
@@ -55,3 +57,9 @@ class PostResponse(PostBase):
 
     class Config:
         orm_mode=True
+
+
+# Vote
+class Vote(BaseModel):
+    post_id: int
+    dir: conint(le=1)
