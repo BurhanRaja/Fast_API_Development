@@ -63,3 +63,12 @@ class PostResponse(PostBase):
 class Vote(BaseModel):
     post_id: int
     dir: conint(le=1)
+
+
+# Posted
+class PostedVote(BaseModel):
+    Post: PostResponse
+    votes: int
+
+    class Config:
+        orm_mode=True

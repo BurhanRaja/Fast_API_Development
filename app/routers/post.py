@@ -1,5 +1,6 @@
 from typing import List, Optional
 from fastapi import Response, status, HTTPException, Depends, APIRouter
+from sqlalchemy import func
 from starlette.status import HTTP_204_NO_CONTENT
 from sqlalchemy.orm import Session
 from app import oauth2
@@ -12,10 +13,13 @@ router = APIRouter(
 )
 
 # GET Request to recieve all posts of a user
-@router.get("/", response_model= List[schemas.PostResponse])
+@router.get("/", response_model= List[schemas.PostedVote])
 def posts(db: Session = Depends(get_db), current_user: int = Depends(oauth2.get_current_user), limit: int = 10, skip: int = 0, search: Optional[str] = ""):
     # from database
-    posts = db.query(models.Post).filter(models.Post.title.contains(search)).limit(limit).offset(skip).all()
+    # posts = db.query(models.Post).filter(models.Post.title.contains(search)).limit(limit).offset(skip).all()
+
+    posts = db.query(models.Post, func.count(models.Vote.user_id).label("votes")).join(models.Vote, models.Post.id == models.Vote.post_id, isouter=True).group_by(models.Post.id).filter(models.Post.title.contains(search)).limit(limit).offset(skip).all()
+
     return posts
 
 
@@ -31,9 +35,11 @@ def create_post(post : schemas.PostCreate, db: Session = Depends(get_db), curren
 
 
 # GET request to recieve one post of a particular user
-@router.get("/{id}", response_model=schemas.PostResponse)
+@router.get("/{id}", response_model=schemas.PostedVote)
 def get_post(id : int, db: Session = Depends(get_db), current_user: int = Depends(oauth2.get_current_user)):
-    post = db.query(models.Post).filter(models.Post.id == id).first()
+    
+    post = db.query(models.Post, func.count(models.Vote.user_id).label("votes")).join(models.Vote, models.Post.id == models.Vote.post_id, isouter=True).group_by(models.Post.id).filter(models.Post.id == id).first()
+    
     if not post:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"post with id: {id} does not exist.")
     return post
@@ -42,11 +48,14 @@ def get_post(id : int, db: Session = Depends(get_db), current_user: int = Depend
 # DELETE request to delete one post of a particular user
 @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_post(id:int, db: Session = Depends(get_db), current_user: int = Depends(oauth2.get_current_user)):
+    
     post_query = db.query(models.Post).filter(models.Post.id == id)
     del_post = post_query.first()
+    
     # If the post id is not valid
     if del_post == None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"post with id: {id} does not exist.")
+    
     # If the user is not valid
     if del_post.user_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f"Not Authorized to perform requested task.")
