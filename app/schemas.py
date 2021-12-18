@@ -1,7 +1,6 @@
 from pydantic import BaseModel
 from pydantic.networks import EmailStr
 from pydantic.types import conint
-from sqlalchemy import orm
 from datetime import datetime
 from typing import Optional
 
