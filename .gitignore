@@ -5,3 +5,4 @@ app/routers/__pycache__/
 .env
 alembic/__pycache__/
 alembic/versions/__pycache__/
+Notes
